@@ -1,34 +1,49 @@
 import math
+import random
 
 
 class SensorMock:
-  """Symulator czujnika termowizyjnego do wykrywania hot-spotów na farmie PV."""
+  """Symulator czujnika termowizyjnego
 
-  def __init__(self, hotspot_offset=(20, 20)):
-    # Pozycja hot-spotu względem punktu startowego (w metrach: N, E)
-    self.hotspot_offset = hotspot_offset
+  """
 
-  def scan_point(self, current_pos, target_pos, tolerance=5.0):
-    """Sprawdza, czy w pobliżu docelowego punktu znajduje się anomalia termiczna.
+  def __init__(self, random_hotspot=True):
+    # Losowanie pozycji anomalii hot-spotu do testów
+    if random_hotspot:
+      # Losowe przesunięcie w metrach (N, E)
+      self.hotspot_offset = (random.randint(10, 30), random.randint(10, 30))
+    else:
+      self.hotspot_offset = (20, 20)
 
-    Zwraca słownik z wynikiem detekcji.
-    """
-    # Obliczamy dystans do zaprogramowanego hot-spotu
-    # W uproszczeniu symulujemy, że wykrywamy cel w punkcie nr 2
-    distance_to_hotspot = math.hypot(
-        current_pos[0] - target_pos[0], current_pos[1] - target_pos[1]
+    print(
+        "[SENSOR_INIT] Zainicjalizowano sensor termowizyjny."
+        f" Ukryta anomalia w offsetach: {self.hotspot_offset}"
     )
 
-    # Symulacja detekcji termicznej (np. temperatura > 65°C)
-    if distance_to_hotspot <= tolerance:
+  def scan_area(self, current_pos_m, tolerance=5.0):
+    """Skanuje otoczenie w poszukiwaniu anomalii temperaturowych
+
+    TODO :
+    - Podpięcie  AI / biblioteki OpenCV do analizy klatek wideo z kamery
+    - Klasyfikacja ciężaru uszkodzenia (lekka czy krytyczny hot-spot).
+    """
+    distance = math.hypot(
+        current_pos_m[0] - self.hotspot_offset[0],
+        current_pos_m[1] - self.hotspot_offset[1],
+    )
+
+    if distance <= tolerance:
       return {
           "target_found": True,
-          "temperature": 72.4,
-          "description": "Wykryto hot-spot (uszkodzony panel PV)!",
+          "temperature": random.uniform(65.0, 85.0),
+          "description": (
+              "WYKRYTO ANOMALIĘ! (Hot-spot na panelu PV lub wyciek ciepła z"
+              " dachu budynku)"
+          ),
       }
 
     return {
-        "target_found": False,
-        "temperature": 24.1,
-        "description": "Brak anomalii termicznych.",
+      "target_found": False,
+      "temperature": random.uniform(18.0, 25.0),
+      "description": "Norma termiczna. Brak strat ciepła.",
     }
