@@ -18,7 +18,7 @@ def test_sensor_mock():
   """Testuje sensor z losowymi koordynatami"""
   sensor = SensorMock(random_hotspot=True)
 
-  # Testujemy, czy funkcja skanowania poprawnie zwraca strukturę słownika
+  # Testujemy czy funkcja skanowania poprawnie zwraca strukturę słownika
   result = sensor.scan_area((0, 0))
   assert "target_found" in result
   assert "temperature" in result

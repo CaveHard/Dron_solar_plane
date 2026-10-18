@@ -10,7 +10,7 @@ Dron ma przygotowane obszary, nad którymi sprawdza kamera termowizyją czy nie 
 ---
 
 ## 2. Przebieg prawidłowego scenariusza
-1. **Inicjalizacja i połączenie:** Nawiązanie bezpiecznego połączenia TCP z symulatorem ArduPilot SITL oraz oczekiwanie na stabilną pozycję GPS (`Home`).
+1. **Połączenie:** Nawiązanie bezpiecznego połączenia TCP z symulatorem ArduPilot SITL oraz oczekiwanie na stabilną pozycję GPS (`Home`).
 2. **Start i wznoszenie:** Automatyczne uzbrojenie silników w trybie `GUIDED` i start pionowy na zadaną wysokość operacyjną (15 m).
 3. **Wielosektorowe skanowanie (Siatka trasy):** Dron przelatuje kolejno przez zdefiniowane sektory, wykonując plan trasy metodą „koszenia trawnika” (*lawnmower pattern* / zygzak).
 4. **Detekcja i reakcja:** W trakcie przelotu moduł sensorów (`SensorMock`) stale monitoruje otoczenie. W przypadku wykrycia anomalii termicznej (przekroczenia normy temperaturowej):

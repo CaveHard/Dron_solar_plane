@@ -14,7 +14,7 @@ class RoutePlanner:
       height_m=30,
       step=15,
   ):
-    """Generuje punkty w formie zygzaka (lawnmower) dla wybranego sektora
+    """Generuje punkty w formie zygzaka dla wybranego sektora
 
     Przesunięty o offset_n (północ) i offset_e (wschód) względem bazy.
     """

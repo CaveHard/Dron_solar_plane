@@ -3,7 +3,7 @@ import random
 
 
 class SensorMock:
-  """Symulacja sensora termowizyjnego do wykrywania hot-spotów"""
+  """Symulacja sensora termowizyjnego do wykrywania hot-spotow"""
 
   def __init__(self, random_hotspot=True):
     # Losujemy pozycję usterki zeeby testy były za każdym razem inne

@@ -16,7 +16,7 @@ def main():
 
   drone.connect()
 
-  print("[INFO] Czekam na złapanie pozycji GPS (Home)...")
+  print("[INFO] Czekam na złapanie pozycji GPS(Home)...")
   home_pos = None
   while home_pos is None:
     home_pos = drone.get_position()

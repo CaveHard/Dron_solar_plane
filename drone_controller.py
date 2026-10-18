@@ -112,7 +112,7 @@ class DroneController:
       if pos is None:
         continue
 
-      # Liczymy prosty dystans w metrach do celu
+      # Liczymy prosty dystans w metraach do celu
       d_north = (lat - pos[0]) * 111_320.0
       d_east = (lon - pos[1]) * 111_320.0 * math.cos(math.radians(pos[0]))
       distance = math.hypot(d_north, d_east)
