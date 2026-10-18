@@ -4,23 +4,30 @@ from pymavlink import mavutil
 
 
 class DroneController:
+  """Klasa do sterowania dronem przez MAVLink
+
+  Obsługuje połączenie, uzbrajanie, start i lot po punktach.
+  """
 
   def __init__(self, connection_string="tcp:127.0.0.1:5762"):
     self.connection_string = connection_string
     self.master = None
 
   def connect(self, timeout=15):
-    print(f"[DRONE] Łączenie z autopilotem: {self.connection_string}...")
+    print(f"[DRONE] Próbuję połączyć się z: {self.connection_string}...")
     self.master = mavutil.mavlink_connection(self.connection_string)
-    if self.master.wait_heartbeat(timeout=timeout) is None:
-      raise ConnectionError("Brak heartbeatu. Sprawdź czy SITL działa.")
-    print("[DRONE] Połączono pomyślnie z symulatorem.")
+
+    # Czekamy na pierwszy pakiet heartbeat od SITL
+    hb = self.master.wait_heartbeat(timeout=timeout)
+    if hb is None:
+      raise ConnectionError(
+          "Nie udało się połączyć! Sprawdź czy SITL w Mission Plannerze działa."
+      )
+    print("[DRONE] Połączenie z autopilotem nawiązane pomyślnie.")
 
   def get_position(self, timeout=5):
-    """TODO :
-
-    - Rozbudowa o odczyt poziom baterii, prędkość wiatru itp
-    """
+    # TODO: w przyszłości warto tu wrzucić odczyt z innych sensorów
+    # (np. stan baterii, prędkość wiatru z telemetrii)
     msg = self.master.recv_match(
         type="GLOBAL_POSITION_INT", blocking=True, timeout=timeout
     )
@@ -28,21 +35,22 @@ class DroneController:
       return None
     return msg.lat / 1e7, msg.lon / 1e7, msg.relative_alt / 1000.0
 
-  def set_mode(self, mode, timeout=10):
-    self.master.set_mode(mode)
-    expected = self.master.mode_mapping()[mode]
-    end = time.time() + timeout
-    while time.time() < end:
-      hb = self.master.recv_match(type="HEARTBEAT", blocking=True, timeout=1)
-      if hb is not None and hb.custom_mode == expected:
-        return
-    raise RuntimeError(f"Nie udało się zmienić trybu na {mode}")
+  def set_mode(self, mode_name, timeout=10):
+    self.master.set_mode(mode_name)
+    target_mode = self.master.mode_mapping()[mode_name]
 
-  def arm_and_takeoff(self, alt=15.0):
-    print("[DRONE] Uzbrajanie i start...")
+    end_time = time.time() + timeout
+    while time.time() < end_time:
+      hb = self.master.recv_match(type="HEARTBEAT", blocking=True, timeout=1)
+      if hb and hb.custom_mode == target_mode:
+        return
+    raise RuntimeError(f"Nie udało się zmienić trybu na {mode_name}")
+
+  def arm_and_takeoff(self, target_alt=15.0):
+    print("[DRONE] Zmieniam tryb na GUIDED i uzbrajam silniki...")
     self.set_mode("GUIDED")
 
-    # Uzbrojenie
+    # Komenda uzbrojenia
     self.master.mav.command_long_send(
         self.master.target_system,
         self.master.target_component,
@@ -56,9 +64,9 @@ class DroneController:
         0,
         0,
     )
-    time.sleep(3)
+    time.sleep(2)
 
-    # Start
+    print(f"[DRONE] Startuję na wysokość {target_alt}m...")
     self.master.mav.command_long_send(
         self.master.target_system,
         self.master.target_component,
@@ -70,15 +78,17 @@ class DroneController:
         0,
         0,
         0,
-        alt,
+        target_alt,
     )
-    time.sleep(6)
-    print(f"[OK] Osiągnięto wysokość startową: {alt}m")
+    time.sleep(5)
+    print("[OK] Wznoszenie zakończone.")
 
-  def fly_to(self, lat, lon, alt, name, timeout=60, radius=2.0):
-    print(f"[DRONE] Lot do: {name}")
-    start = time.time()
-    while time.time() - start < timeout:
+  def fly_to(self, lat, lon, alt, waypoint_name, timeout=60, radius=2.0):
+    print(f"[DRONE] Lecę do: {waypoint_name}")
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+      # Wysyłamy pozycję docelową (ArduPilot w GUIDED tego wymaga ciągle !!!)
       self.master.mav.set_position_target_global_int_send(
           0,
           self.master.target_system,
@@ -102,17 +112,21 @@ class DroneController:
       if pos is None:
         continue
 
-      dn = (lat - pos[0]) * 111_320.0
-      de = (lon - pos[1]) * 111_320.0 * math.cos(math.radians(pos[0]))
-      dist = math.hypot(dn, de)
+      # Liczymy prosty dystans w metrach do celu
+      d_north = (lat - pos[0]) * 111_320.0
+      d_east = (lon - pos[1]) * 111_320.0 * math.cos(math.radians(pos[0]))
+      distance = math.hypot(d_north, d_east)
 
-      print(f"    dystans: {dist:5.1f} m", end="\r")
-      if dist <= radius:
-        print(f"\n[OK] Dotarto do: {name}")
+      print(f"    dystans do celu: {distance:5.1f} m", end="\r")
+
+      if distance <= radius:
+        print(f"\n[OK] Osiągnięto punkt: {waypoint_name}")
         return True
+
       time.sleep(0.1)
-    raise TimeoutError(f"Nie dotarto do celu: {name}")
+
+    raise TimeoutError(f"Minął limit czasu na dolot do {waypoint_name}")
 
   def return_and_land(self):
-    print("[DRONE] Powrót do bazy (RTL)...")
+    print("[DRONE] Aktywuję powrót do bazy (RTL)...")
     self.set_mode("RTL")

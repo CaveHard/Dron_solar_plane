@@ -3,30 +3,24 @@ import random
 
 
 class SensorMock:
-  """Symulator czujnika termowizyjnego
-
-  """
+  """Symulacja sensora termowizyjnego do wykrywania hot-spotów"""
 
   def __init__(self, random_hotspot=True):
-    # Losowanie pozycji anomalii hot-spotu do testów
+    # Losujemy pozycję usterki zeeby testy były za każdym razem inne
     if random_hotspot:
-      # Losowe przesunięcie w metrach (N, E)
-      self.hotspot_offset = (random.randint(10, 30), random.randint(10, 30))
+      self.hotspot_offset = (random.randint(10, 25), random.randint(10, 25))
     else:
-      self.hotspot_offset = (20, 20)
+      self.hotspot_offset = (15, 15)
 
     print(
-        "[SENSOR_INIT] Zainicjalizowano sensor termowizyjny."
-        f" Ukryta anomalia w offsetach: {self.hotspot_offset}"
+        "[SENSOR] Zainicjalizowano sensor. Ukryta anomalia w koordynatach"
+        f" lokalnych: {self.hotspot_offset}"
     )
 
   def scan_area(self, current_pos_m, tolerance=5.0):
-    """Skanuje otoczenie w poszukiwaniu anomalii temperaturowych
+    # TODO: dodac tutaj model OpenCV/AI
+    # analizujący strumień wideo z kamery zamontowanej na dronie.
 
-    TODO :
-    - Podpięcie  AI / biblioteki OpenCV do analizy klatek wideo z kamery
-    - Klasyfikacja ciężaru uszkodzenia (lekka czy krytyczny hot-spot).
-    """
     distance = math.hypot(
         current_pos_m[0] - self.hotspot_offset[0],
         current_pos_m[1] - self.hotspot_offset[1],
@@ -35,15 +29,14 @@ class SensorMock:
     if distance <= tolerance:
       return {
           "target_found": True,
-          "temperature": random.uniform(65.0, 85.0),
+          "temperature": random.uniform(68.0, 82.5),
           "description": (
-              "WYKRYTO ANOMALIĘ! (Hot-spot na panelu PV lub wyciek ciepła z"
-              " dachu budynku)"
+              "UWAGA! Wykryto hot-spot"
           ),
       }
 
     return {
-      "target_found": False,
-      "temperature": random.uniform(18.0, 25.0),
-      "description": "Norma termiczna. Brak strat ciepła.",
+        "target_found": False,
+        "temperature": random.uniform(19.0, 24.0),
+        "description": "Temperatura w normie.",
     }
